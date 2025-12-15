@@ -1,0 +1,42 @@
+// Title: Suspicious LOLBin Execution from Browser Parent via Weaponized Clip-Paste
+// Description: Detects execution of common LOLBins from browser or explorer parents with suspicious command-lines.
+// Data Sources: DeviceProcessEvents
+// MITRE ATT&CK: T1059, T1059.001, T1218, T1218.005
+// Tactics: Execution, Defense Evasion
+// False Positives: Admin scripting, developer activity; tune by user role
+// Severity: Medium
+// Platform: Microsoft Defender for Endpoint
+
+let timeframe = 1d;
+let suspicious_processes = dynamic(["powershell.exe", "mshta.exe", "cmd.exe"]);
+let parent_processes = dynamic(["explorer.exe", "chrome.exe", "msedge.exe", "firefox.exe", "iexplore.exe"]);
+
+DeviceProcessEvents
+| where TimeGenerated > ago(timeframe)
+| where FileName in~ (suspicious_processes)
+| where InitiatingProcessFileName in~ (parent_processes)
+| where
+    (FileName =~ "mshta.exe" and ProcessCommandLine matches regex @'(?i)mshta\.exe\s+(javascript:|vbscript:|https?://)')
+    or
+    (
+        FileName =~ "powershell.exe" and
+        (
+            ProcessCommandLine has "-enc"
+            or ProcessCommandLine has "IEX"
+            or ProcessCommandLine has "Invoke-Expression"
+            or (ProcessCommandLine has "DownloadString" and ProcessCommandLine has "New-Object")
+            or (strlen(ProcessCommandLine) > 400 and not(ProcessCommandLine has ".ps1"))
+        )
+    )
+    or
+    (FileName =~ "cmd.exe" and (ProcessCommandLine has "/c powershell" or ProcessCommandLine has "/c mshta"))
+| project
+    TimeGenerated,
+    DeviceName,
+    AccountName,
+    FileName,
+    ProcessCommandLine,
+    InitiatingProcessFileName,
+    InitiatingProcessCommandLine,
+    MD5,
+    SHA256

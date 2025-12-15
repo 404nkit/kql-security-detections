@@ -1,0 +1,17 @@
+// Title: Consent.exe Loading Malicious DLL Outside System Directories
+// Description: Detects DLL sideloading where consent.exe loads known malicious DLLs from non-system paths.
+// Data Sources: DeviceImageLoadEvents
+// MITRE ATT&CK: T1574.001, T1134.004
+// Tactics: Persistence, Privilege Escalation, Defense Evasion
+// False Positives: Rare; verify custom installers or test tools
+// Severity: High
+// Platform: Microsoft Defender for Endpoint
+
+DeviceImageLoadEvents
+| where InitiatingProcessFileName =~ "consent.exe"
+| where FileName endswith "version.dll"
+    or FileName endswith "tworkq.dll"
+    or FileName endswith "wmsgapi.dll"
+    or FileName endswith "msimg32.dll"
+| where not(FileName startswith @"C:\Windows\System32")
+    and not(FileName startswith @"C:\Windows\SysWOW64")

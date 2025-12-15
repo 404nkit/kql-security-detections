@@ -1,0 +1,13 @@
+// Title: Conhost Headless Execution via Pcalua
+// Description: Detects conhost.exe executed with --headless argument when launched by pcalua.exe.
+// Data Sources: DeviceProcessEvents
+// MITRE ATT&CK: T1202
+// Tactics: Defense Evasion
+// False Positives: Very low; pcalua rarely launches headless conhost
+// Severity: High
+// Platform: Microsoft Defender for Endpoint
+
+DeviceProcessEvents
+| where FileName =~ "conhost.exe"
+| where ProcessCommandLine has "--headless"
+| where InitiatingProcessFileName =~ "pcalua.exe"

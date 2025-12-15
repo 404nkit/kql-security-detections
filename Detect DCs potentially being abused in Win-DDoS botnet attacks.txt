@@ -1,0 +1,14 @@
+
+// Title: Detect DCs potentially being abused in Win-DDoS botnet attacks
+// Description: Detects high outbound connections from lsass.exe (potential credential exfiltration or abuse).
+// MITRE ATT&CK: T1003.001
+// Tactics: Credential Access
+// Platform: Windows
+
+SecurityEvent
+| where TimeGenerated > ago(1d)
+| where EventID == 5156
+| where ProcessName =~ "lsass.exe"
+| summarize ConnCount = count() by Computer
+| where ConnCount > 500
+| order by ConnCount desc

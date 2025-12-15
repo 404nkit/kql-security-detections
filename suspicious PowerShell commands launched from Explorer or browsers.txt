@@ -1,0 +1,12 @@
+
+// Title: ClickFix detection: suspicious PowerShell commands launched from Explorer or browsers
+// Description: Detects PowerShell execution from browsers or Explorer with suspicious arguments (common in ClickFix-style attacks).
+// MITRE ATT&CK: T1059.001, T1204
+// Tactics: Execution
+// Platform: Windows Defender ATP
+
+DeviceProcessEvents
+| where FileName =~ "powershell.exe" or ProcessCommandLine has_cs "powershell"
+| where InitiatingProcessFileName in ("explorer.exe","chrome.exe","msedge.exe","firefox.exe","iexplore.exe","edge.exe")
+| where ProcessCommandLine has_any ("-EncodedCommand","-e ","-Command","Invoke-Expression","IEX","FromBase64String","Invoke-WebRequest","DownloadString","Start-Process","Expand-Archive","Invoke-Item")
+| project TimeGenerated, DeviceName, AccountName, InitiatingProcessFileName, FileName, ProcessCommandLine

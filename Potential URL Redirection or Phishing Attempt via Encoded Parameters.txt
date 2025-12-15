@@ -1,0 +1,13 @@
+// Title: Potential URL Redirection or Phishing Attempt via Encoded Parameters
+// Description: Detects obfuscated redirection URLs with encoded parameters containing domains.
+// MITRE ATT&CK: T1566, T1566.002
+// Tactics: Initial Access
+// Platform: Microsoft 365
+
+UrlClickEvents
+| where Url matches regex @"(u=|url=|redirect=|r=|link=|target=|dest=)"
+| extend EncodedParam = extract(@"(?:u|url|redirect|r|link|target|dest)=([^&]{15,})", 1, Url)
+| where isnotempty(EncodedParam) and EncodedParam matches regex @"^[A-Za-z0-9-_]+$"
+| where EncodedParam contains "." or EncodedParam contains "com" or EncodedParam contains "net" or EncodedParam contains "org"
+| extend PossibleDomain = extract(@"([a-z0-9-]{3,}.(com|net|org|info|biz|xyz|top|site|online|club|gov|io|co|us|me|tech))", 1, EncodedParam)
+| project TimeGenerated, AccountUpn, IPAddress, Url, EncodedParam, PossibleDomain, UrlChain, IsClickedThrough

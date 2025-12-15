@@ -1,0 +1,15 @@
+
+// Title: Device Code Phishing Detection
+// Description: Correlates URL clicks with device code authentication sign-ins (common in device code phishing attacks).
+// MITRE ATT&CK: T1621, T1566.002
+// Tactics: Credential Access, Initial Access
+// Platform: Azure AD
+
+UrlClickEvents
+| where IsClickedThrough == true
+| join kind=inner (
+SigninLogs
+| where AuthenticationProtocol == "deviceCode"
+| where ResultType in ("0", "50074", "50076", "500121")
+) on $left.AccountUpn == $right.UserPrincipalName
+| project TimeGenerated, AccountUpn, IPAddress, AppDisplayName, ResourceDisplayName, Url, ResultType

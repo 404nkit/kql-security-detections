@@ -1,0 +1,31 @@
+// Title: Akira ransomware abuses CPU tuning tool to disable Microsoft Defender
+// Description: Detects malicious drivers, service creation attempts, and Defender registry modifications used by Akira.
+// MITRE ATT&CK: T1014, T1562.001
+// Tactics: Defense Evasion, Privilege Escalation
+// Platform: Windows Defender ATP
+
+let MaliciousDrivers = dynamic([
+"bd1f381e5a3db22e88776b7873d4d2835e9a1ec620571d2b1da0c58f81c84a56", // hlpdrv.sys
+"16f83f056177c4ec24c7e99d01ca9d9d6713bd0497eeedb777a3ffefa99c97f0" // rwdrv.sys
+]);
+let SuspiciousPaths = dynamic([
+@"\hlpdrv.sys",
+@"\rwdrv.sys"
+]);
+DeviceFileEvents
+| where SHA256 in~ (MaliciousDrivers)
+or FolderPath has_any (SuspiciousPaths)
+| union (
+DeviceProcessEvents
+| where ProcessCommandLine has_any ("sc create", "CreateService") and ProcessCommandLine has_any ("hlpdrv.sys", "rwdrv.sys", "KMHLPSVC", "mgdsrv")
+)
+| union (
+DeviceRegistryEvents
+| where RegistryKey has_any (
+@"HKLM\SYSTEM\CurrentControlSet\Services\WinDefend",
+@"HKLM\SOFTWARE\Policies\Microsoft\Windows Defender"
+)
+| where RegistryValueName in~ ("Start", "DisableAntiSpyware", "DisableRealtimeMonitoring")
+)
+| project TimeGenerated, DeviceName, FileName, ProcessCommandLine, RegistryKey, RegistryValueName, RegistryValueData, FolderPath, SHA256
+| order by TimeGenerated desc

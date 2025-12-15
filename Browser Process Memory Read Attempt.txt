@@ -1,0 +1,13 @@
+// Title: Browser Process Memory Read Attempt
+// Description: Detects attempts to read memory of browser processes (potential credential dumping).
+// MITRE ATT&CK: T1003
+// Tactics: Credential Access
+// Platform: Windows Defender ATP
+
+let PROCESS_VM_READ = 0x0010;
+DeviceEvents
+| where ActionType == "OpenProcessApiCall"
+| where FileName in~ ("chrome.exe", "msedge.exe", "firefox.exe", "brave.exe", "opera.exe")
+| extend DesiredAccess = tolong(parse_json(AdditionalFields).DesiredAccess)
+| where binary_and(DesiredAccess, PROCESS_VM_READ) != 0
+| project TimeGenerated, DeviceName, FileName, InitiatingProcessFileName, DesiredAccess

@@ -1,0 +1,9 @@
+// Title: Suspicious Process Spawned by Browser
+// Description: Detects browsers spawning processes other than themselves (potential drive-by or malicious execution).
+// MITRE ATT&CK: T1189, T1204.001
+// Tactics: Initial Access, Execution
+// Platform: Windows Defender ATP
+
+DeviceProcessEvents
+| where InitiatingProcessFileName in~ ("chrome.exe", "msedge.exe", "firefox.exe", "brave.exe", "opera.exe")
+| where FileName !in~ ("chrome.exe", "msedge.exe", "firefox.exe", "brave.exe", "opera.exe")

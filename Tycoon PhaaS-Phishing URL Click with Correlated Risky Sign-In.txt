@@ -1,0 +1,42 @@
+// Title: Tycoon PhaaS: Phishing URL Click with Correlated Risky Sign-In
+// Description: Correlates clicks on known Tycoon phishing URLs with subsequent risky Azure AD sign-ins.
+// MITRE ATT&CK: T1566, T1566.002
+// Tactics: Initial Access
+// Platform: Microsoft 365, Azure AD
+
+let phishingUrls = dynamic([
+"azureapplicationregistration.pages.dev",
+"chrnobinson.com",
+"workers.dev",
+".pages.dev",
+".web.core.windows.net",
+"/oauth2/v2.0/authorize",
+"client_id=",
+"scope=openid"
+]);
+let urlClicks = UrlClickEvents
+| where Url has_any (phishingUrls)
+| project AccountUpn, ClickTime = TimeGenerated, Url, NetworkMessageId, ClickIP = IPAddress;
+let emailEvents = EmailEvents
+| where isnotempty(NetworkMessageId)
+| project NetworkMessageId, Subject, SenderFromAddress, RecipientEmailAddress, EmailTime = TimeGenerated;
+let riskyLogins = SigninLogs
+| where (IsRisky == true or RiskLevelAggregated !in ("none", "low"))
+or UserAgent has_any ("axios/1.7.9", "axios/1.8.2")
+| project UserPrincipalName, SigninTime = TimeGenerated, LoginIP = IPAddress, UserAgent, Status, RiskLevelAggregated;
+urlClicks
+| join kind=inner (emailEvents) on NetworkMessageId
+| join kind=inner (riskyLogins) on $left.AccountUpn == $right.UserPrincipalName
+| project
+AccountUpn,
+SenderFromAddress,
+Subject,
+Url,
+ClickTime,
+SigninTime,
+ClickIP,
+LoginIP,
+UserAgent,
+Status,
+RiskLevelAggregated
+| order by SigninTime desc

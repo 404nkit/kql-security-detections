@@ -1,0 +1,18 @@
+// Title: Detect Suspicious Browser Extension Activity
+// Description: Detects unauthorized browser extension installations or remote debugging activity.
+// MITRE ATT&CK: T1176.001
+// Tactics: Persistence
+// Platform: Windows Defender ATP
+
+union
+(
+DeviceProcessEvents
+| where FileName in~ ("chrome.exe", "msedge.exe", "brave.exe", "opera.exe")
+| where ProcessCommandLine has "--remote-debugging-port"
+),
+(
+DeviceNetworkEvents
+| where RemotePort in (9222, 9223, 9229)
+| where RemoteIP == "127.0.0.1"
+| where InitiatingProcessFileName !in~ ("chrome.exe", "msedge.exe", "brave.exe", "opera.exe")
+)

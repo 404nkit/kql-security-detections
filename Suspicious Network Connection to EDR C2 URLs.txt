@@ -1,0 +1,20 @@
+// Title: Suspicious Network Connection to EDR C2 URLs
+// Description: Detects non-legitimate processes connecting to known EDR C2 paths (potential adversary manipulation of EDR agent).
+// MITRE ATT&CK: T1071.001
+// Tactics: Command and Control
+// Platform: Windows Defender ATP
+
+DeviceNetworkEvents
+| where InitiatingProcessFileName !in ("mssense.exe", "senseir.exe")
+| where RemoteUrl has_any ("/edr/commands/cnc", "/senseir/v1/actions/")
+| project
+TimeGenerated,
+DeviceName,
+InitiatingProcessFileName,
+InitiatingProcessCommandLine,
+InitiatingProcessParentFileName,
+RemoteUrl,
+RemoteIP,
+RemotePort,
+InitiatingProcessAccountName,
+InitiatingProcessAccountDomain

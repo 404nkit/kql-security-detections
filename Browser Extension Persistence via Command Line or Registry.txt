@@ -1,0 +1,26 @@
+
+// Title: Browser Extension Persistence via Command Line or Registry
+// Description: Detects forcedInterruptedyou give me downloadables files<DOCUMENT filename="obfuscated-powershell-persistence-coldriver.kql">
+// Title: Obfuscated PowerShell Persistence (COLDRIVER / MAYBEROBOT)
+// Description: Detects suspicious execution of RUNDLL32.EXE with specific command-line patterns indicative of malicious DLL loading for persistence.
+// MITRE ATT&CK: T1218.011, T1574.001
+// Tactics: Persistence, Defense Evasion, Privilege Escalation
+// Platform: Windows Defender ATP
+// Data Source: DeviceProcessEvents
+
+DeviceProcessEvents
+| where ProcessVersionInfoOriginalFileName =~ "RUNDLL32.EXE"
+| where ProcessCommandLine has_all (@"", ",")
+| where ProcessCommandLine has_any (
+"iamnotarobot.dll",
+"checkme.dll",
+"machinerie.dll",
+"humanCheck",
+"verifyme"
+)
+| extend
+timestamp = TimeGenerated,
+AccountCustomEntity = AccountName,
+HostCustomEntity = DeviceName,
+ProcessCustomEntity = FileName,
+CommandLineCustomEntity = ProcessCommandLine

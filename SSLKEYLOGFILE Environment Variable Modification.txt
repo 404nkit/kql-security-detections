@@ -1,0 +1,9 @@
+// Title: SSLKEYLOGFILE Environment Variable Modification
+// Description: Detects modifications to SSLKEYLOGFILE registry value (potential SSL/TLS traffic decryption for credential capture).
+// MITRE ATT&CK: T1552.004
+// Tactics: Credential Access
+// Platform: Windows Defender ATP
+
+DeviceRegistryEvents
+| where RegistryKey =~ @"SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
+| where RegistryValueName =~ "SSLKEYLOGFILE"

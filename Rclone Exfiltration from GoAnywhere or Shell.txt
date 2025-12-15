@@ -1,0 +1,23 @@
+// Title: Rclone Exfiltration from GoAnywhere or Shell
+// Description: Detects rclone usage with transfer commands from GoAnywhere or shell processes (potential data exfiltration).
+// MITRE ATT&CK: S1040, T1048, T1567
+// Tactics: Exfiltration
+// Platform: Windows Defender ATP
+
+let rclone_commands = dynamic(["copy", "move", "sync", "copyto", "moveto"]);
+DeviceProcessEvents
+| where Timestamp > ago(1d)
+| where FileName =~ "rclone.exe"
+| where ProcessCommandLine has_any (rclone_commands)
+| where InitiatingProcessFolderPath contains @"\GoAnywhere"
+or InitiatingProcessFileName in~ ("cmd.exe", "powershell.exe")
+| project
+Timestamp,
+DeviceName,
+AccountName,
+FileName,
+ProcessCommandLine,
+InitiatingProcessFileName,
+InitiatingProcessCommandLine,
+InitiatingProcessFolderPath,
+SHA256

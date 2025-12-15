@@ -1,0 +1,15 @@
+// Title: Multiple Service Crashes on Domain Controller
+// Description: Detects repeated crashes of critical AD-related services (potential DoS or compromise).
+// MITRE ATT&CK: T1003.003, T1547.008
+// Tactics: Credential Access, Persistence
+// Platform: Windows
+
+SecurityEvent
+| where TimeGenerated > ago(7d)
+| where EventID in (7031, 7034, 1000)
+| where AccountType == "Machine"
+| where ServiceName in ("NTDS", "Netlogon", "Spooler", "LSASS", "LDAP")
+or ProcessName in ("lsass.exe", "spoolsv.exe", "ntdsai.dll")
+| summarize CrashCount = count() by Computer, ServiceName, ProcessName
+| where CrashCount >= 3
+| order by CrashCount desc
